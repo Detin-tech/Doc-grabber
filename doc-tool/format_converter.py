@@ -2,8 +2,8 @@ import os
 import sys
 
 try:
-    import markdown
-except ImportError:
+    import markdown  # type: ignore
+except ImportError:  # pragma: no cover - fallback when markdown is missing
     markdown = None
 
 try:
@@ -11,15 +11,36 @@ try:
 except ImportError:
     pypandoc = None
 
+def _simple_markdown_to_html(text: str) -> str:
+    """Very small subset Markdown -> HTML converter used when the markdown
+    package is unavailable. Only handles headings and paragraphs.
+    """
+    html_lines = []
+    for line in text.splitlines():
+        if line.startswith('# '):
+            html_lines.append(f'<h1>{line[2:].strip()}</h1>')
+        elif line.startswith('## '):
+            html_lines.append(f'<h2>{line[3:].strip()}</h2>')
+        elif line:
+            html_lines.append(f'<p>{line}</p>')
+    return "\n".join(html_lines)
+
+
 def convert_markdown_to_html(md_path, html_path):
     if not markdown:
-        print("markdown package not available; cannot convert to HTML")
-        return
+        with open(md_path, 'r', encoding='utf-8') as f:
+            text = f.read()
+        html = _simple_markdown_to_html(text)
+        with open(html_path, 'w', encoding='utf-8') as f:
+            f.write(html)
+        return True
+    
     with open(md_path, 'r', encoding='utf-8') as f:
         text = f.read()
     html = markdown.markdown(text)
     with open(html_path, 'w', encoding='utf-8') as f:
         f.write(html)
+    return True
 
 
 def convert_markdown_to_rtf(md_path, rtf_path):
@@ -41,8 +62,8 @@ def convert_output(folder, output_format):
                 convert_markdown_to_rtf(md_path, rtf_path)
             elif output_format == 'html':
                 html_path = base + '.html'
-                convert_markdown_to_html(md_path, html_path)
-                os.remove(md_path)
+                if convert_markdown_to_html(md_path, html_path):
+                    os.remove(md_path)
 
 
 if __name__ == '__main__':

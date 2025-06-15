@@ -2,7 +2,16 @@ import os
 import sys
 import re
 import hashlib
-import requests
+try:
+    import requests
+except ImportError:  # pragma: no cover - allow tests to run without requests
+    class _DummyRequests:
+        def get(self, *args, **kwargs):
+            raise ImportError("requests not installed")
+        def head(self, *args, **kwargs):
+            raise ImportError("requests not installed")
+
+    requests = _DummyRequests()
 from urllib.parse import urlparse
 
 verbose = False  # Global flag
