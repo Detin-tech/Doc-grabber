@@ -40,7 +40,7 @@ def file_checksum(path):
             h.update(chunk)
     return h.hexdigest()
 
-def replace_links_in_markdown(folder):
+def replace_links_in_markdown(folder, output_format='md'):
     print(f"Scanning markdown files in: {folder}")
     url_map = {}
     skipped_urls = set()
@@ -65,8 +65,12 @@ def replace_links_in_markdown(folder):
                             rel_path = rel_path.replace(os.sep, '/')
                             if rel_path.endswith('.md'):
                                 rel_path = rel_path[:-3]
-                            url_map[url] = f'[[{rel_path}]]'
-                            log(f"    HTTP: {url} -> [[{rel_path}]]")
+                            if output_format == 'html':
+                                url_map[url] = f'[{rel_path}]({rel_path}.html)'
+                                log(f"    HTTP: {url} -> [{rel_path}]({rel_path}.html)")
+                            else:
+                                url_map[url] = f'[[{rel_path}]]'
+                                log(f"    HTTP: {url} -> [[{rel_path}]]")
                         else:
                             skipped_urls.add(url)
                             log(f"    Skipped invalid URL: {url}")
@@ -75,8 +79,12 @@ def replace_links_in_markdown(folder):
                         rel_path = rel_path.replace(os.sep, '/')
                         if rel_path.endswith('.md'):
                             rel_path = rel_path[:-3]
-                        url_map[url] = f'[[{rel_path}]]'
-                        log(f"    REL: {url} -> [[{rel_path}]]")
+                        if output_format == 'html':
+                            url_map[url] = f'[{rel_path}]({rel_path}.html)'
+                            log(f"    REL: {url} -> [{rel_path}]({rel_path}.html)")
+                        else:
+                            url_map[url] = f'[[{rel_path}]]'
+                            log(f"    REL: {url} -> [[{rel_path}]]")
 
             for url, obsidian_link in url_map.items():
                 content = content.replace(url, obsidian_link)
@@ -104,7 +112,7 @@ def load_sitemap_urls(folder):
     log(f"Loaded {len(urls)} URLs from sitemap")
     return urls
 
-def inject_backlinks(folder):
+def inject_backlinks(folder, output_format='md'):
     print(f"Injecting backlinks in markdown files at: {folder}")
 
     # Load all markdown files content indexed by relative path without .md
@@ -158,7 +166,10 @@ def inject_backlinks(folder):
         backlinks = '\n\n---\n\n**Related:**\n\n'
         for ref_key in sorted(backlinked_from):
             display_name = ref_key.split('/')[-1].replace('-', ' ')
-            backlinks += f"- [[{ref_key}]]\n"
+            if output_format == 'html':
+                backlinks += f"- [{display_name}]({ref_key}.html)\n"
+            else:
+                backlinks += f"- [[{ref_key}]]\n"
 
         # Append backlink section if not already present (idempotency)
         if '**Related:**' not in content:
@@ -172,13 +183,20 @@ def inject_backlinks(folder):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python link_converter.py <output_folder> [--verbose]")
+        print("Usage: python link_converter.py <output_folder> [--verbose] [--format <fmt>]")
         sys.exit(1)
 
     output_folder = sys.argv[1]
-    if len(sys.argv) > 2 and sys.argv[2] == "--verbose":
+    output_format = 'md'
+    args = sys.argv[2:]
+    if "--verbose" in args:
         verbose = True
         print("Verbose mode enabled.")
+        args.remove("--verbose")
+    if "--format" in args:
+        idx = args.index("--format")
+        if idx < len(args) - 1:
+            output_format = args[idx + 1]
 
-    replace_links_in_markdown(output_folder)
-    inject_backlinks(output_folder)
+    replace_links_in_markdown(output_folder, output_format)
+    inject_backlinks(output_folder, output_format)
