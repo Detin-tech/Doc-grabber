@@ -12,7 +12,7 @@ Strips trash (headers, footers, trackers)
 
 Converts to Obsidian-style link formats (optional)
 
-Flexible output formats: choose .md, .html, or .md + .rtf
+Flexible output formats: choose .md, .html, or .md + .rtf (format names are case-insensitive)
 
 Outputs clean local folder you can archive or browse
 

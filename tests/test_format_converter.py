@@ -15,3 +15,12 @@ def test_convert_output_html(tmp_path):
     assert '<h1>Title' in html.read_text(encoding='utf-8')
     assert not md.exists()
 
+def test_convert_output_html_case_insensitive(tmp_path):
+    md = tmp_path / 'file.md'
+    md.write_text('# Title\n\nSome text', encoding='utf-8')
+    format_converter.convert_output(str(tmp_path), 'HTML')
+    html = tmp_path / 'file.html'
+    assert html.exists()
+    assert '<h1>Title' in html.read_text(encoding='utf-8')
+    assert not md.exists()
+

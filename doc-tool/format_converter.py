@@ -51,6 +51,7 @@ def convert_markdown_to_rtf(md_path, rtf_path):
 
 
 def convert_output(folder, output_format):
+    output_format = output_format.lower()
     for root, _, files in os.walk(folder):
         for file in files:
             if not file.endswith('.md'):
