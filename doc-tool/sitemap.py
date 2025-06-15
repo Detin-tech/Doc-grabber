@@ -1,8 +1,23 @@
 import sys
 import os
 import time
-import requests
-from bs4 import BeautifulSoup
+try:
+    import requests
+except ImportError:  # pragma: no cover - allow tests to run without requests
+    class _DummyRequests:
+        def get(self, *args, **kwargs):
+            raise ImportError("requests not installed")
+
+    requests = _DummyRequests()
+import re
+try:
+    from bs4 import BeautifulSoup
+    def _parse_links(html):
+        soup = BeautifulSoup(html, 'html.parser')
+        return [a['href'] for a in soup.find_all('a', href=True)]
+except ImportError:  # pragma: no cover - simple fallback
+    def _parse_links(html):
+        return re.findall(r'<a [^>]*href=["\']?([^"\'>]+)', html, re.IGNORECASE)
 from urllib.parse import urljoin, urlparse
 import subprocess
 import asyncio
@@ -39,10 +54,9 @@ class SitemapBuilder:
             self.visited.add(url)
             self.urls.append(url)
 
-            soup = BeautifulSoup(r.text, 'html.parser')
             links_found = []
-            for link in soup.find_all('a', href=True):
-                href = urljoin(url, link['href']).split('#')[0].rstrip('/')
+            for link_href in _parse_links(r.text):
+                href = urljoin(url, link_href).split('#')[0].rstrip('/')
                 if not href.startswith('http'):
                     continue
                 links_found.append(href)
